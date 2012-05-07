@@ -1,0 +1,9 @@
+{
+  "name": "viki-resize",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "2.5.9",
+    "gm": "1.3.0",
+    "coffee-script": "1.3.1"
+  }
+}
