@@ -14,6 +14,9 @@ resize = (request, response) ->
     path: parsedPath.pathname
     method: 'GET'
 
+  one_day_in_seconds = 86400
+  response.header 'Cache-Control', "public; max-age=#{one_day_in_seconds}"
+
   fileRequest = http.request fileOptions, (fileResponse) ->
     im(fileResponse).size bufferStream: true, (err, size) ->
       [cols, rows] = [size.width, size.height]

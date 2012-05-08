@@ -15,7 +15,7 @@
   });
 
   resize = function(request, response) {
-    var dimension, fileOptions, fileRequest, height, parsedPath, width, _ref;
+    var dimension, fileOptions, fileRequest, height, one_day_in_seconds, parsedPath, width, _ref;
     parsedPath = url.parse(new Buffer(request.params.path, 'base64').toString());
     _ref = (function() {
       var _i, _len, _ref, _results;
@@ -33,6 +33,8 @@
       path: parsedPath.pathname,
       method: 'GET'
     };
+    one_day_in_seconds = 86400;
+    response.header('Cache-Control', "public; max-age=" + one_day_in_seconds);
     fileRequest = http.request(fileOptions, function(fileResponse) {
       return im(fileResponse).size({
         bufferStream: true
