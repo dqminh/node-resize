@@ -4,7 +4,7 @@ gm = require 'gm'
 app = require('express').createServer()
 im = gm.subClass imageMagick: true
 
-app.get '/size/:size/path/:path', (request, response) ->
+resize = (request, response) ->
   parsedPath = url.parse(new Buffer(request.params.path, 'base64').toString())
   [width, height] = (+dimension for dimension in request.params.size.split('x', 2))
 
@@ -30,6 +30,8 @@ app.get '/size/:size/path/:path', (request, response) ->
         stdout.pipe response
 
   fileRequest.end()
+
+app.get '/:path/size/:size', resize
 
 port = process.env.PORT || 3000
 app.listen port, ->
