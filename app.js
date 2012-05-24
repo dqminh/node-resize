@@ -47,7 +47,7 @@
   };
 
   resize = function(request, response) {
-    var dimension, fileRequest, height, width, _ref;
+    var dimension, fileRequest, height, options, width, _ref;
     _ref = (function() {
       var _i, _len, _ref, _results;
       _ref = request.params.size.split('x', 2);
@@ -58,6 +58,8 @@
       }
       return _results;
     })(), width = _ref[0], height = _ref[1];
+    options = getFileOptions(request.params.path);
+    console.log("resize width: " + width + ", height: " + height + " for " + options.host + "/" + options.path);
     if (width > 2000) {
       width = 2000;
     }
@@ -65,7 +67,7 @@
       height = 2000;
     }
     setCacheControl(response);
-    fileRequest = http.request(getFileOptions(request.params.path), function(fileResponse) {
+    fileRequest = http.request(options, function(fileResponse) {
       return im(fileResponse).size({
         bufferStream: true
       }, function(err, size) {
@@ -83,9 +85,8 @@
             }
             return _results;
           })(), cols = _ref2[0], rows = _ref2[1];
-          this.resize(cols, rows);
         }
-        this.gravity('Center').background('rgba(255,255,255,0.0)');
+        this.quality(70).gravity('Center').background('rgba(255,255,255,0.0)').resize(cols, rows).noProfile();
         if (cols !== width || rows !== height) {
           this.extent(width, height);
         }

@@ -28,22 +28,26 @@ render_image = (request, response) ->
 
 resize = (request, response) ->
   [width, height] = (+dimension for dimension in request.params.size.split('x', 2))
+  options = getFileOptions request.params.path
+  console.log "resize width: #{width}, height: #{height} for #{options.host}/#{options.path}"
   width = 2000 if width > 2000
   height = 2000 if height > 2000
 
   setCacheControl response
 
-  fileRequest = http.request getFileOptions(request.params.path), (fileResponse) ->
+  fileRequest = http.request options, (fileResponse) ->
     im(fileResponse).size bufferStream: true, (err, size) ->
       [cols, rows] = [size.width, size.height]
       if width != cols || height != rows
         scale = Math.max.apply Math, [width/cols, height/rows]
         [cols, rows] = (Math.round(scale * (x + 0.5)) for x in [cols, rows])
-        this.resize cols, rows
 
       this
+        .quality(70)
         .gravity('Center')
         .background('rgba(255,255,255,0.0)')
+        .resize(cols, rows)
+        .noProfile()
       this.extent(width, height) if cols != width || rows != height
       this.stream (err, stdout, stderr) ->
         stdout.pipe response
