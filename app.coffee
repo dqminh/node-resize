@@ -1,20 +1,39 @@
 http = require 'http'
 url = require 'url'
 gm = require 'gm'
-app = require('express').createServer()
+express = require 'express'
+app = express.createServer()
 im = gm.subClass imageMagick: true
 
-app.get '/size/:size/path/:path', (request, response) ->
-  parsedPath = url.parse(new Buffer(request.params.path, 'base64').toString())
-  [width, height] = (+dimension for dimension in request.params.size.split('x', 2))
+app.use express.favicon(__dirname + '/favicon.ico', maxAge: 2592000000)
 
+getFileOptions = (path) ->
+  parsedPath = url.parse(new Buffer(path, 'base64').toString())
   fileOptions =
     host: parsedPath.hostname
     port: parsedPath.port
     path: parsedPath.pathname
     method: 'GET'
 
-  fileRequest = http.request fileOptions, (fileResponse) ->
+setCacheControl = (response) ->
+  one_day_in_seconds = 86400
+  response.header 'Cache-Control', "public; max-age=#{one_day_in_seconds}"
+
+render_image = (request, response) ->
+  setCacheControl response
+  fileRequest = http.request getFileOptions(request.params.path), (fileResponse) ->
+    fileResponse.pipe response
+
+  fileRequest.end()
+
+resize = (request, response) ->
+  [width, height] = (+dimension for dimension in request.params.size.split('x', 2))
+  width = 2000 if width > 2000
+  height = 2000 if height > 2000
+
+  setCacheControl response
+
+  fileRequest = http.request getFileOptions(request.params.path), (fileResponse) ->
     im(fileResponse).size bufferStream: true, (err, size) ->
       [cols, rows] = [size.width, size.height]
       if width != cols || height != rows
@@ -30,6 +49,9 @@ app.get '/size/:size/path/:path', (request, response) ->
         stdout.pipe response
 
   fileRequest.end()
+
+app.get '/:path/size/:size', resize
+app.get '/:path', render_image
 
 port = process.env.PORT || 3000
 app.listen port, ->
