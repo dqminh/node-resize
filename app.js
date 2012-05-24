@@ -35,6 +35,7 @@
     var one_day_in_seconds;
     one_day_in_seconds = 86400;
     response.header('ETag', new Date().getTime());
+    response.header('Last-Modified', new Date().toUTCString());
     return response.header('Cache-Control', "public; max-age=" + one_day_in_seconds);
   };
 
