@@ -1,0 +1,4 @@
+--compilers coffee:coffee-script
+--colors
+--reporter dot
+--require should

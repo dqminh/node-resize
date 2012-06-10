@@ -2,18 +2,14 @@ http = require 'http'
 url = require 'url'
 gm = require 'gm'
 express = require 'express'
+
 app = express.createServer()
 im = gm.subClass imageMagick: true
 
 app.use express.favicon(__dirname + '/favicon.ico', maxAge: 2592000000)
 
 getFileOptions = (path) ->
-  parsedPath = url.parse(new Buffer(path, 'base64').toString())
-  fileOptions =
-    host: parsedPath.hostname
-    port: parsedPath.port
-    path: parsedPath.pathname
-    method: 'GET'
+  url.parse(new Buffer(path, 'base64').toString())
 
 setCacheControl = (response) ->
   one_day_in_seconds = 86400
@@ -37,6 +33,9 @@ resize = (request, response) ->
 
   setCacheControl response
 
+  response.on 'data', (data) ->
+    console.log data
+
   fileRequest = http.request options, (fileResponse) ->
     im(fileResponse).size bufferStream: true, (err, size) ->
       [cols, rows] = [size.width, size.height]
@@ -45,7 +44,6 @@ resize = (request, response) ->
         [cols, rows] = (Math.round(scale * (x + 0.5)) for x in [cols, rows])
 
       this
-        .quality(70)
         .gravity('Center')
         .background('rgba(255,255,255,0.0)')
         .resize(cols, rows)
@@ -54,11 +52,13 @@ resize = (request, response) ->
       this.stream (err, stdout, stderr) ->
         stdout.pipe response
 
+  fileRequest.on 'error', () -> console.log "errror"
   fileRequest.end()
 
 app.get '/:path/size/:size', resize
 app.get '/:path', render_image
 
-port = process.env.PORT || 3000
-app.listen port, ->
-  console.log "Listening on #{port}"
+module.exports = app
+
+#port = process.env.PORT || 3000
+#app.listen port, -> console.log "Listening on #{port}"
