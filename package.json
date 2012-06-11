@@ -6,8 +6,12 @@
     "npm": "1.1.x"
   },
   "dependencies": {
-    "express": "2.5.9",
+    "express": "3.0.0beta2",
     "gm": "1.3.0",
     "coffee-script": "1.3.1"
+  },
+  "devDependencies": {
+    "mocha": "1.1.0",
+    "should": "0.6.3"
   }
 }

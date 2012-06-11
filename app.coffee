@@ -1,64 +1,57 @@
-http = require 'http'
-url = require 'url'
-gm = require 'gm'
-express = require 'express'
-app = express.createServer()
-im = gm.subClass imageMagick: true
+http        = require 'http'
+url         = require 'url'
+ResizeImage = require './lib/resize_image'
+express     = require 'express'
+app = module.exports = express()
+test = app.get('env') == "test"
 
 app.use express.favicon(__dirname + '/favicon.ico', maxAge: 2592000000)
+app.use app.router
 
-getFileOptions = (path) ->
-  parsedPath = url.parse(new Buffer(path, 'base64').toString())
-  fileOptions =
-    host: parsedPath.hostname
-    port: parsedPath.port
-    path: parsedPath.pathname
-    method: 'GET'
+getFileOptions = (path) -> url.parse(new Buffer(path, 'base64').toString())
 
-setCacheControl = (response) ->
-  one_day_in_seconds = 86400
+# Setting Cache Control
+# The response should have
+# - Etag: current time in milliseconds
+# - Last-Modified: current time in UTC string
+# - Cache-Control: cached the response for 1 year
+setCacheControl = (request, response, next) ->
+  one_year_in_seconds = 365 * 24 * 60 * 60
   response.header 'ETag', new Date().getTime()
   response.header 'Last-Modified', new Date().toUTCString()
-  response.header 'Cache-Control', "public; max-age=#{one_day_in_seconds}"
+  response.header 'Cache-Control', "public; max-age=#{one_year_in_seconds}"
+  next()
 
-render_image = (request, response) ->
-  setCacheControl response
-  fileRequest = http.request getFileOptions(request.params.path), (fileResponse) ->
-    fileResponse.pipe response
+# Error handling. Just output an empty image response with 400 status code
+error = (err, request, response, next) ->
+  response.setHeader "Content-Type", "image/jpeg"
+  response.send 400, ""
+app.use error
 
+# Pipe out the image without any modification
+renderImage = (request, response, next) ->
+  options = getFileOptions(request.params.path)
+  fileRequest = http.request options, (image) -> image.pipe response
   fileRequest.end()
 
-resize = (request, response) ->
+# Resize the image to the user desired width/height
+resize = (request, response, next) ->
   [width, height] = (+dimension for dimension in request.params.size.split('x', 2))
   options = getFileOptions request.params.path
-  console.log "resize width: #{width}, height: #{height} for #{options.host}/#{options.path}"
-  width = 2000 if width > 2000
-  height = 2000 if height > 2000
+  console.log "resize width: #{width}, height: #{height} for #{options.host}/#{options.path}" if !test
 
-  setCacheControl response
+  if width > 0 && height > 0
+    width = 2000 if width > 2000
+    height = 2000 if height > 2000
 
-  fileRequest = http.request options, (fileResponse) ->
-    im(fileResponse).size bufferStream: true, (err, size) ->
-      [cols, rows] = [size.width, size.height]
-      if width != cols || height != rows
-        scale = Math.max.apply Math, [width/cols, height/rows]
-        [cols, rows] = (Math.round(scale * (x + 0.5)) for x in [cols, rows])
+    fileRequest = http.request options, (fileResponse) ->
+      resizeImage = new ResizeImage fileResponse, response
+      resizeImage.run width, height
+    fileRequest.end()
+  else
+    throw new Error("invalid request: #{request.params}")
 
-      this
-        .quality(70)
-        .gravity('Center')
-        .background('rgba(255,255,255,0.0)')
-        .resize(cols, rows)
-        .noProfile()
-      this.extent(width, height) if cols != width || rows != height
-      this.stream (err, stdout, stderr) ->
-        stdout.pipe response
+app.get '/:path/size/:size', setCacheControl, resize
+app.get '/:path', setCacheControl, renderImage
 
-  fileRequest.end()
-
-app.get '/:path/size/:size', resize
-app.get '/:path', render_image
-
-port = process.env.PORT || 3000
-app.listen port, ->
-  console.log "Listening on #{port}"
+module.exports = app
