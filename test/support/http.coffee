@@ -1,7 +1,7 @@
 # Based on https://github.com/visionmedia/express/blob/master/test/support/http.js
 EventEmitter = require('events').EventEmitter
 http = require 'http'
-methods = require('express').router.methods
+methods = require('express').methods
 
 class Request extends EventEmitter
   # create a new Request instance. A Request instance allow user to perform
@@ -11,9 +11,11 @@ class Request extends EventEmitter
   constructor: (@app) ->
     @data = []
     @headers = {}
-    @app.listen 0, =>
-      @address = @app.address()
-      @listening = true
+    if !@server
+      @server = http.Server @app
+      @server.listen 0, =>
+        @address = @server.address()
+        @listening = true
 
   request: (@method, @path) ->
     return this
@@ -28,7 +30,7 @@ class Request extends EventEmitter
 
   end: (fn) ->
     if @listening
-      params = 
+      params =
         method: @method,
         port: @address.port
         host: @address.address
@@ -44,7 +46,7 @@ class Request extends EventEmitter
           fn(response)
       request.end()
     else
-      @app.on 'listening', => @end(fn)
+      @server.on 'listening', => @end(fn)
     this
 
 # define convenience HTTP methods
