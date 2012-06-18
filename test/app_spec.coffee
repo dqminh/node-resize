@@ -1,5 +1,6 @@
 request = require('./support/http')
 app = require('../app')
+# the source is http://www.google.com/intl/en_ALL/images/logos/images_logo_lg.gif
 sampleImage = "aHR0cDovL3d3dy5nb29nbGUuY29tL2ludGwvZW5fQUxML2ltYWdlcy9sb2dvcy9pbWFnZXNfbG9nb19sZy5naWY="
 
 describe "Application", ->
@@ -26,7 +27,7 @@ describe "Application", ->
     request(app).get("/#{sampleImage}").end (response) ->
       response.headers.etag.should.be.above 0
       done()
-    
+
   it 'sets Last-Modified of the response', (done) ->
     request(app).get("/#{sampleImage}").end (response) ->
       response.headers['last-modified'].length.should.be.above 0
@@ -41,3 +42,9 @@ describe "Application", ->
     request(app).get("/#{sampleImage}").end (response) ->
       response.headers['pragma'].should.be.equal "cache"
       done()
+
+  it 'sets Content-Type header', (done) ->
+    request(app).get("/#{sampleImage}").end (response) ->
+      response.headers['content-type'].should.be.equal "image/gif"
+      done()
+

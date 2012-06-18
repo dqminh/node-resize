@@ -19,5 +19,4 @@ class ResizeImage
       this.extent(width, height) if cols != width || rows != height
       this.stream (err, stdout, stderr) => stdout.pipe response
 
-
 module.exports = ResizeImage
