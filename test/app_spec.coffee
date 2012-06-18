@@ -36,3 +36,8 @@ describe "Application", ->
     request(app).get("/#{sampleImage}").end (response) ->
       response.headers['cache-control'].should.be.equal "public; max-age=31536000"
       done()
+
+  it 'removes Pragma header', (done) ->
+    request(app).get("/#{sampleImage}").end (response) ->
+      response.headers['pragma'].should.be.equal "cache"
+      done()

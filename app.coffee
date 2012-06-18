@@ -20,6 +20,7 @@ setCacheControl = (request, response, next) ->
   response.header 'ETag', new Date().getTime()
   response.header 'Last-Modified', new Date().toUTCString()
   response.header 'Cache-Control', "public; max-age=#{one_year_in_seconds}"
+  response.header 'Pragma', 'cache'
   next()
 
 # Error handling. Just output an empty image response with 400 status code
